@@ -24,12 +24,15 @@ def add_rule(IPRange):
     rule.dst = IP
     if namespace != "all": 
         rule.target = target_ACCEPT
+        chain_input.insert_rule(rule)
+        chain_output.insert_rule(rule)
     else:
         rule.target = target_DROP
+        chain_input.append_rule(rule)
+        chain_output.append_rule(rule)
 
-    chain_input.insert_rule(rule)
-    chain_output.insert_rule(rule)
-    
+    # chain_input.insert_rule(rule)
+    # chain_output.insert_rule(rule)
 
 def flush_all():
     chain_input=iptc.Chain(iptc.Table(iptc.Table.FILTER), "INPUT")
