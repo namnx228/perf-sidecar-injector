@@ -7,7 +7,8 @@ import sys
 # Input: file name of list IP range
 # IPTable manipulate
 
-def add_rule(IP):
+def add_rule(IPRange):
+    
     rule=iptc.Rule()
     # Target
     target_ACCEPT = rule.create_target("ACCEPT")
@@ -17,10 +18,15 @@ def add_rule(IP):
     chain_input=iptc.Chain(iptc.Table(iptc.Table.FILTER), "INPUT")
     chain_output=iptc.Chain(iptc.Table(iptc.Table.FILTER), "OUTPUT")
     
-    rule = iptc.Rule()
+    namespace = IPRange[0]
+    IP = IPRange[1]
     rule.src = IP
     rule.dst = IP
-    rule.target = target_ACCEPT
+    if namespace != "all": 
+        rule.target = target_ACCEPT
+    else:
+        rule.target = target_DROP
+
     chain_input.insert_rule(rule)
     chain_output.insert_rule(rule)
     
@@ -37,18 +43,18 @@ def Input(filename):
         ip_range_list = json.load(f)
         return ip_range_list
 
+#----------Start From Here-------------------------
 if len(sys.argv) > 1:
     filename=sys.argv[1]
 else:
-    filename="test.json"
+    filename="iplist.json"
 
 ip_range_list = Input(filename)
 
 flush_all()
 
 for item in ip_range_list.items():
-    IP = item[1]
-    add_rule(IP)
+    add_rule(item)
 
 while True:
     pass
