@@ -7,10 +7,16 @@ data:
     policy: enabled
     containers:
       - name: perf-sidecar
-        image: bpradipt/perf:1.1
+        image: bpradipt/perf:1.2
         imagePullPolicy: IfNotPresent
         stdin: true
         tty: true
+        args:
+            - 'record'
+            - '0'
+            - '60'
+            - '1'
+            - '-g'
         securityContext:
             privileged: true
         volumeMounts:

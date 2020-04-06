@@ -1,4 +1,4 @@
-IMAGE ?= bpradipt/perf-sidecar-injector
+IMAGE ?= namnx228/perf-sidecar-injector
 TAG ?= $(shell git describe --tags --always)
 RELEASE_TAG := v$(shell cat VERSION)
 ARCH ?= $(shell uname -m)

@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/kubernetes/pkg/apis/core/v1"
+	v1 "k8s.io/kubernetes/pkg/apis/core/v1"
 )
 
 var (
@@ -147,18 +147,31 @@ func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta, injectP
 	return required
 }
 
-func addContainer(target, added []corev1.Container, basePath string) (patch []patchOperation) {
+func addContainer(ar *v1beta1.AdmissionReview, target, added []corev1.Container, basePath string) (patch []patchOperation) {
+	// Namespace := ar.Request.Namespace
 	first := len(target) == 0
 	var value interface{}
 	for _, add := range added {
 		value = add
+		// glog.Infof("Tap trung vao day: %v", add)
 		path := basePath
 		if first {
 			first = false
 			value = []corev1.Container{add}
+
 		} else {
 			path = path + "/-"
 		}
+		// glog.Infof("Gia tri cua value: %v\n", value)
+		// value = append(value.(map[string]interface{})["args"], Namespace)
+		// glog.Infof("Tap trung 2: %v\n", value.(corev1.Container)["args"], Namespace)
+		// var data []byte
+		// value.
+		// value.(corev1.Container).Unmarshal(data)
+		// var dataInterface interface{}
+		// json.Unmarshal(data, dataInterface)
+		// glog.Infof("Tap trung 2: %v\n", dataInterface.(map[string]interface{})["args"])
+
 		patch = append(patch, patchOperation{
 			Op:    "add",
 			Path:  path,
@@ -223,10 +236,11 @@ func updatePIDShare(value bool) (patch []patchOperation) {
 }
 
 // create mutation patch for resoures
-func createPatch(pod *corev1.Pod, sidecarConfig *Config, annotations map[string]string) ([]byte, error) {
+func createPatch(ar *v1beta1.AdmissionReview, pod *corev1.Pod, sidecarConfig *Config, annotations map[string]string) ([]byte, error) {
+	// Namespace := ar.Request.Namespace
 	var patch []patchOperation
 
-	patch = append(patch, addContainer(pod.Spec.Containers, sidecarConfig.Containers, "/spec/containers")...)
+	patch = append(patch, addContainer(ar, pod.Spec.Containers, sidecarConfig.Containers, "/spec/containers")...)
 	patch = append(patch, addVolume(pod.Spec.Volumes, sidecarConfig.Volumes, "/spec/volumes")...)
 	patch = append(patch, updateAnnotation(pod.Annotations, annotations)...)
 	patch = append(patch, updatePIDShare(sidecarConfig.ShareProcessNamespace)...)
@@ -238,6 +252,15 @@ func createPatch(pod *corev1.Pod, sidecarConfig *Config, annotations map[string]
 func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	req := ar.Request
 	var pod corev1.Pod
+	// my section
+	// fmt.Println("My section here")
+
+	// glog.Infof("My section here")
+	// glog.Infof("%v", pod)
+	// glog.Infof("End of my section")
+	// glog.Infof("End of my section")
+
+	//-----end--------
 	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
 		glog.Errorf("Could not unmarshal raw object: %v", err)
 		return &v1beta1.AdmissionResponse{
@@ -261,7 +284,7 @@ func (whsvr *WebhookServer) mutate(ar *v1beta1.AdmissionReview) *v1beta1.Admissi
 	// Workaround: https://github.com/kubernetes/kubernetes/issues/57982
 	applyDefaultsWorkaround(whsvr.sidecarConfig.Containers, whsvr.sidecarConfig.Volumes)
 	annotations := map[string]string{admissionWebhookAnnotationStatusKey: "injected"}
-	patchBytes, err := createPatch(&pod, whsvr.sidecarConfig, annotations)
+	patchBytes, err := createPatch(ar, &pod, whsvr.sidecarConfig, annotations)
 	if err != nil {
 		return &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{
