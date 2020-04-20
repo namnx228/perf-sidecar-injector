@@ -7,7 +7,7 @@ import sys
 # Input: file name of list IP range
 # IPTable manipulate
 
-def add_rule(IPRange):
+def add_rule(IP, namespace):
     
     rule=iptc.Rule()
     # Target
@@ -18,8 +18,6 @@ def add_rule(IPRange):
     chain_input=iptc.Chain(iptc.Table(iptc.Table.FILTER), "INPUT")
     chain_output=iptc.Chain(iptc.Table(iptc.Table.FILTER), "OUTPUT")
     
-    namespace = IPRange[0]
-    IP = IPRange[1]
     rule.src = IP
     rule.dst = IP
     if namespace != "all": 
@@ -47,17 +45,21 @@ def Input(filename):
         return ip_range_list
 
 #----------Start From Here-------------------------
+namespace=""
 if len(sys.argv) > 1:
-    filename=sys.argv[1]
+    namespace=sys.argv[1]
 else:
-    filename="iplist.json"
+    raise VallueError("I need the namespace of this pod")
 
+filename="iplist.json"
 ip_range_list = Input(filename)
 
+# print(ip_range_list[namespace])
 flush_all()
-
-for item in ip_range_list.items():
-    add_rule(item)
+add_rule(ip_range_list[namespace], namespace)
+add_rule(ip_range_list["all"], "all")
+# for item in ip_range_list.items():
+#     add_rule(item)
 
 while True:
     pass

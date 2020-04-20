@@ -148,29 +148,23 @@ func mutationRequired(ignoredList []string, metadata *metav1.ObjectMeta, injectP
 }
 
 func addContainer(ar *v1beta1.AdmissionReview, target, added []corev1.Container, basePath string) (patch []patchOperation) {
-	// Namespace := ar.Request.Namespace
+	Namespace := ar.Request.Namespace
 	first := len(target) == 0
 	var value interface{}
 	for _, add := range added {
+		add.Args = append(add.Args, Namespace)
 		value = add
-		// glog.Infof("Tap trung vao day: %v", add)
+		glog.Infof("Tap trung vao day: %v", Namespace)
 		path := basePath
+		// glog.Infof("Tap trung vo day: %v/n", fmt.Sprintf("%v", value))
 		if first {
 			first = false
+			// glog.Infof("Tap trung first: %v/n", fmt.Sprintf("%v", value))
 			value = []corev1.Container{add}
 
 		} else {
 			path = path + "/-"
 		}
-		// glog.Infof("Gia tri cua value: %v\n", value)
-		// value = append(value.(map[string]interface{})["args"], Namespace)
-		// glog.Infof("Tap trung 2: %v\n", value.(corev1.Container)["args"], Namespace)
-		// var data []byte
-		// value.
-		// value.(corev1.Container).Unmarshal(data)
-		// var dataInterface interface{}
-		// json.Unmarshal(data, dataInterface)
-		// glog.Infof("Tap trung 2: %v\n", dataInterface.(map[string]interface{})["args"])
 
 		patch = append(patch, patchOperation{
 			Op:    "add",
